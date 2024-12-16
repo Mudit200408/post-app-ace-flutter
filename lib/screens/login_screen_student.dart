@@ -1,21 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:post_ace/screens/signup_screen_student.dart';
 import 'home_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/painting.dart';
-// TODO: Remove this import when Firebase is setup
-// import 'package:atharva_coe/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:post_ace/services/auth_service.dart';
 import 'registration/gender_selection_screen.dart';
 
-class LoginScreenStudent extends StatelessWidget {
+class LoginScreenStudent extends StatefulWidget {
   const LoginScreenStudent({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: Firebase Auth setup
-    // 1. Initialize Firebase Auth
-    // 2. Implement email validation for @atharvacoe.ac.in
-    // 3. Setup Google Sign In for admin authentication
+  State<LoginScreenStudent> createState() => _LoginScreenStudentState();
+}
 
+class _LoginScreenStudentState extends State<LoginScreenStudent> {
+  final AuthService _auth = AuthService();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _login() async {
+    String email = _email.text;
+    String password = _password.text;
+
+    if (!email.endsWith('@atharvacoe.ac.in')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please use your college email address'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final User? user = await _auth.loginUserWithEmailId(email, password);
+    if (user != null && context.mounted) {
+      print("User Successfully logged in");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login Successful!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(isAdmin: false),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -35,13 +81,13 @@ class LoginScreenStudent extends StatelessWidget {
                 const SizedBox(
                   height: 20,
                 ),
-                // Login illustration
                 SvgPicture.asset(
                   'assets/illustrations/login_student_illus.svg',
                   height: 200,
                 ),
                 const SizedBox(height: 40),
                 TextField(
+                  controller: _email,
                   decoration: InputDecoration(
                     prefixIcon: Padding(
                       padding: const EdgeInsets.all(12.0),
@@ -61,6 +107,7 @@ class LoginScreenStudent extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: _password,
                   obscureText: true,
                   decoration: InputDecoration(
                     prefixIcon: Padding(
@@ -87,12 +134,12 @@ class LoginScreenStudent extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const GenderSelectionScreen(),
+                            builder: (context) => const SignInStudent(),
                           ),
                         );
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.purple, // Text color
+                        foregroundColor: Colors.purple,
                       ),
                       child: const Text('Create Account?'),
                     ),
@@ -103,18 +150,7 @@ class LoginScreenStudent extends StatelessWidget {
                   width: 180,
                   height: 40,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement email validation
-                      // if (email.endsWith('@atharvacoe.ac.in')) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const HomeScreen(isAdmin: false),
-                        ),
-                      );
-                      // }
-                    },
+                    onPressed: _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6C63FF),
                       foregroundColor: Colors.white,
@@ -130,44 +166,40 @@ class LoginScreenStudent extends StatelessWidget {
                   width: 250,
                   height: 50,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Implement Firebase Google Sign In
-                      // For now, just navigate to admin screen
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const HomeScreen(isAdmin: false),
-                        ),
-                      );
-
-                      // TODO: Uncomment this when Firebase is setup
-                      // final authService = AuthService();
-                      // final user = await authService.signInWithGoogle();
-                      // if (user != null && context.mounted) {
-                      //   if (user.email.endsWith('@admin.atharvacoe.ac.in')) {
-                      //     Navigator.pushReplacement(
-                      //       context,
-                      //       MaterialPageRoute(
-                      //         builder: (context) => const AdminHomeScreen(),
-                      //       ),
-                      //     );
-                      //   } else if (user.email.endsWith('@atharvacoe.ac.in')) {
-                      //     Navigator.pushReplacement(
-                      //       context,
-                      //       MaterialPageRoute(
-                      //         builder: (context) => const StudentHomeScreen(),
-                      //       ),
-                      //     );
-                      //   } else {
-                      //     ScaffoldMessenger.of(context).showSnackBar(
-                      //       const SnackBar(
-                      //         content: Text('Please use your college email address'),
-                      //       ),
-                      //     );
-                      //     await authService.signOut();
-                      //   }
-                      // }
+                    onPressed: () async {
+                      try {
+                        final UserCredential? userCred = await _auth.loginWithGoggle();
+                        if (userCred != null && context.mounted) {
+                          final String? email = userCred.user?.email;
+                          
+                          if (email != null && email.endsWith('@atharvacoe.ac.in')) {
+                            print("User Successfully logged in");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Login Successful!'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HomeScreen(isAdmin: false),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please use your college email address'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        print("Error during Google Sign In: $e");
+                      }
                     },
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(

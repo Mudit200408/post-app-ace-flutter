@@ -73,7 +73,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LoginScreenAdmin(),
+                  builder: (context) => const LoginScreen(),
                 ),
               );
             },
